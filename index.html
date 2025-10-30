@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrave Protocol Quiz</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@700&display=swap');
+
+        :root {
+            --primary-orange: #ff7722;
+            --bg-dark: #0f0f0f;
+            --bg-card: rgba(15, 15, 15, 0.95);
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --correct-color: #22dd88;
+            --incorrect-color: #ff4444;
+            --border-radius: 18px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 50%, rgba(255, 119, 34, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 70%, rgba(255, 119, 34, 0.08) 0%, transparent 50%);
+            z-index: 0;
+            animation: bgShift 20s ease infinite;
+        }
+
+        @keyframes bgShift {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(20px, 20px); }
+        }
+
+        #particles-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .quiz-container {
+            width: 100%;
+            max-width: 680px;
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            box-shadow: 0 20px 60px rgba(255, 119, 34, 0.2);
+            border: 2px solid var(--primary-orange);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+            animation: containerPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes containerPulse {
+            0%, 100% { box-shadow: 0 20px 60px rgba(255, 119, 34, 0.2); }
+            50% { box-shadow: 0 30px 80px rgba(255, 119, 34, 0.4); }
+        }
+
+        .content-wrapper {
+            padding: 40px 35px;
+        }
+
+        .start-screen, .quiz-screen, .result-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s, transform 0.5s;
+            transform: translateY(20px);
+        }
+
+        .screen-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .quiz-screen, .result-screen { display: none; }
+
+        .logo-section {
+            margin-bottom: 30px;
+            position: relative;
+            height: 140px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo-img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: contain;
+            border: 3px solid var(--primary-orange);
+            box-shadow: 0 8px 25px rgba(255, 119, 34, 0.4);
+            animation: logoFloat 3s ease-in-out infinite;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+        }
+
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-12px) scale(1.05); }
+        }
+
+        .logo-glow {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 119, 34, 0.3) 0%, transparent 70%);
+            animation: glowPulse 2s ease-in-out infinite;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.5; }
+            50% { transform: translateX(-50%) scale(1.2); opacity: 0.8; }
+        }
+
+        h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.8rem;
+            color: var(--primary-orange);
+            margin-bottom: 12px;
+            text-shadow: 0 0 20px rgba(255, 119, 34, 0.3);
+            animation: titleGlow 3s ease-in-out infinite;
+            letter-spacing: 2px;
+        }
+
+        @keyframes titleGlow {
+            0%, 100% { text-shadow: 0 0 20px rgba(255, 119, 34, 0.3); }
+            50% { text-shadow: 0 0 30px rgba(255, 119, 34, 0.6); }
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 28px;
+            line-height: 1.6;
+            max-width: 500px;
+        }
+
+        .btn {
+            background: var(--primary-orange);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            box-shadow: 0 8px 20px rgba(255, 119, 34, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .btn:hover::before {
+            opacity: 1;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 12px 30px rgba(255, 119, 34, 0.5);
+        }
+
+        .btn:active {
+            transform: translateY(-1px) scale(1.02);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        #share-btn {
+            background: #1DA1F2;
+            box-shadow: 0 8px 20px rgba(29, 161, 242, 0.3);
+        }
+
+        #share-btn:hover {
+            box-shadow: 0 12px 30px rgba(29, 161, 242, 0.5);
+        }
+
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            gap: 15px;
+        }
+
+        #question-counter, #timer {
+            background: rgba(255, 119, 34, 0.15);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            border: 1px solid var(--primary-orange);
+            font-size: 0.95rem;
+            animation: headerBounce 0.6s ease-out;
+        }
+
+        @keyframes headerBounce {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        #timer {
+            color: var(--primary-orange);
+            font-weight: 700;
+            animation: timerPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes timerPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        #question-text {
+            font-size: 1.4rem;
+            margin-bottom: 28px;
+            line-height: 1.5;
+            font-weight: 500;
+            animation: questionFade 0.6s ease-out;
+        }
+
+        @keyframes questionFade {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .answers-grid {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .answer-btn {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 2px solid rgba(255, 119, 34, 0.2);
+            color: var(--text-primary);
+            padding: 18px 20px;
+            text-align: left;
+            font-size: 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+            animation: answerSlideIn 0.5s ease-out backwards;
+        }
+
+        @keyframes answerSlideIn {
+            0% { opacity: 0; transform: translateX(-20px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+
+        .answer-btn:nth-child(1) { animation-delay: 0.05s; }
+        .answer-btn:nth-child(2) { animation-delay: 0.1s; }
+        .answer-btn:nth-child(3) { animation-delay: 0.15s; }
+        .answer-btn:nth-child(4) { animation-delay: 0.2s; }
+
+        .answer-btn::before {
+            content: attr(data-letter);
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: 700;
+            color: var(--primary-orange);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+        }
+
+        .answer-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .answer-btn:hover::after {
+            left: 100%;
+        }
+
+        .answer-btn span {
+            margin-left: 35px;
+            display: block;
+        }
+
+        .answer-btn:hover:not([disabled]) {
+            background: rgba(255, 119, 34, 0.12);
+            border-color: var(--primary-orange);
+            transform: translateX(8px) scale(1.02);
+            box-shadow: 0 4px 15px rgba(255, 119, 34, 0.3), inset 0 0 20px rgba(255, 119, 34, 0.1);
+        }
+
+        .answer-btn.correct {
+            background: rgba(34, 221, 136, 0.2);
+            border-color: var(--correct-color);
+            color: var(--correct-color);
+            font-weight: 600;
+            animation: correctPop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes correctPop {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.08) rotate(2deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        .answer-btn.incorrect {
+            background: rgba(255, 68, 68, 0.2);
+            border-color: var(--incorrect-color);
+            color: var(--incorrect-color);
+            font-weight: 600;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            25% { transform: translateX(-8px) rotate(-1deg); }
+            75% { transform: translateX(8px) rotate(1deg); }
+        }
+
+        .answer-btn:disabled {
+            cursor: not-allowed;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            margin-top: 30px;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-orange), #ffaa44);
+            transition: width 0.5s ease-out;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(255, 119, 34, 0.6);
+            position: relative;
+        }
+
+        #progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        #final-score {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 4.5rem;
+            color: var(--primary-orange);
+            margin: 15px 0;
+            text-shadow: 0 0 20px rgba(255, 119, 34, 0.3);
+            animation: scorePopIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes scorePopIn {
+            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .percentage-text {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-orange);
+            margin: 15px 0;
+            animation: percentageSlide 0.6s ease-out 0.3s backwards;
+        }
+
+        @keyframes percentageSlide {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            .content-wrapper { padding: 30px 20px; }
+            h1 { font-size: 2.2rem; }
+            #final-score { font-size: 3.5rem; }
+            .btn-group { flex-direction: column; }
+            .btn-group .btn { width: 100%; }
+            .logo-img { width: 100px; height: 100px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particles-canvas"></canvas>
+
+    <div class="quiz-container">
+        <div class="content-wrapper">
+            <!-- Start Screen -->
+            <div class="start-screen screen-visible" id="start-screen">
+                <div class="logo-section">
+                    <div class="logo-glow"></div>
+                    <img src="logo.png" alt="Entrave Logo" class="logo-img">
+                </div>
+                <h1>ENTRAVE</h1>
+                <p>Master the Entrave prediction market platform. Test your knowledge on markets, fees, points, and trading mechanics.</p>
+                <button class="btn" id="start-btn">START QUIZ</button>
+            </div>
+
+            <!-- Quiz Screen -->
+            <div class="quiz-screen" id="quiz-screen">
+                <div class="quiz-header">
+                    <span id="question-counter"></span>
+                    <span id="timer"></span>
+                </div>
+                <h2 id="question-text"></h2>
+                <div class="answers-grid" id="answers-grid"></div>
+                <div class="progress-bar-container">
+                    <div id="progress-bar"></div>
+                </div>
+            </div>
+
+            <!-- Result Screen -->
+            <div class="result-screen" id="result-screen">
+                <h2>Quiz Complete!</h2>
+                <p id="score-text">Your Score</p>
+                <div id="final-score"></div>
+                <div class="percentage-text" id="percentage">0%</div>
+                <p id="score-message">Great job exploring Entrave!</p>
+                <div class="btn-group">
+                    <button class="btn" id="restart-btn">PLAY AGAIN</button>
+                    <a href="#" target="_blank" class="btn" id="share-btn">SHARE</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ACCURATE QUIZ DATA - Based on verified Entrave information
+        const quizData = [
+            {
+                question: "Is market creation on Entrave free?",
+                answers: [
+                    { text: "Currently yes, but will require \$300 ENTRV after token launch", correct: true },
+                    { text: "No, it always costs \$300 ENTRV", correct: false },
+                    { text: "Yes, completely free forever", correct: false },
+                    { text: "Only for verified users", correct: false }
+                ]
+            },
+            {
+                question: "How many points do you earn per \$1 traded on Entrave?",
+                answers: [
+                    { text: "1 point", correct: false },
+                    { text: "50 points", correct: false },
+                    { text: "10 points", correct: true },
+                    { text: "100 points", correct: false }
+                ]
+            },
+            {
+                question: "How many points do you earn per \$1 for funding a launchpad market?",
+                answers: [
+                    { text: "10 points", correct: false },
+                    { text: "50 points", correct: false },
+                    { text: "100 points with 1.5x boost for early funders", correct: true },
+                    { text: "500 points", correct: false }
+                ]
+            },
+            {
+                question: "How many points do you earn for creating a market?",
+                answers: [
+                    { text: "50 points", correct: false },
+                    { text: "500 points", correct: true },
+                    { text: "100 points", correct: false },
+                    { text: "1000 points", correct: false }
+                ]
+            },
+            {
+                question: "What blockchain does Entrave settle all trading on?",
+                answers: [
+                    { text: "Ethereum", correct: false },
+                    { text: "Bitcoin", correct: false },
+                    { text: "BNB Chain in USDT", correct: true },
+                    { text: "Solana", correct: false }
+                ]
+            },
+            {
+                question: "Which AMM does Entrave use for trading?",
+                answers: [
+                    { text: "Uniswap V3", correct: false },
+                    { text: "PancakeSwap V4 with hooks", correct: true },
+                    { text: "Curve Finance", correct: false },
+                    { text: "Balancer", correct: false }
+                ]
+            },
+            {
+                question: "What is the transaction fee percentage on Entrave?",
+                answers: [
+                    { text: "3%", correct: false },
+                    { text: "0.5%", correct: false },
+                    { text: "1%", correct: true },
+                    { text: "2%", correct: false }
+                ]
+            },
+            {
+                question: "How many points for a referral on Entrave?",
+                answers: [
+                    { text: "50 points + 5% of their totals", correct: true },
+                    { text: "500 points + 10% of their totals", correct: false },
+                    { text: "100 points flat", correct: false },
+                    { text: "250 points + 2% of their totals", correct: false }
+                ]
+            },
+            {
+                question: "When did Entrave mainnet launch?",
+                answers: [
+                    { text: "October 20, 2025", correct: false },
+                    { text: "October 23, 2025", correct: true },
+                    { text: "October 25, 2025", correct: false },
+                    { text: "October 30, 2025", correct: false }
+                ]
+            },
+            {
+                question: "How many points for verifying your wallet?",
+                answers: [
+                    { text: "50 points", correct: false },
+                    { text: "100 points", correct: true },
+                    { text: "500 points", correct: false },
+                    { text: "250 points", correct: false }
+                ]
+            },
+            {
+                question: "Is Entrave currently centralized or decentralized for resolution?",
+                answers: [
+                    { text: "Currently decentralized", correct: false },
+                    { text: "Currently centralized, planning decentralized oracles", correct: true },
+                    { text: "Completely decentralized", correct: false },
+                    { text: "Uses a DAO for resolution", correct: false }
+                ]
+            },
+            {
+                question: "Can you trade on Entrave before market resolution?",
+                answers: [
+                    { text: "No, only after resolution", correct: false },
+                    { text: "Yes, you can sell shares anytime before resolution", correct: true },
+                    { text: "Only in the last 24 hours", correct: false },
+                    { text: "Only with special permission", correct: false }
+                ]
+            },
+            {
+                question: "Is Entrave trustless and non-custodial?",
+                answers: [
+                    { text: "No, it uses custodians", correct: false },
+                    { text: "Partially, some features are custodial", correct: false },
+                    { text: "Yes, fully trustless and non-custodial", correct: true },
+                    { text: "Only for large traders", correct: false }
+                ]
+            },
+            {
+                question: "What is the launchpad phase on Entrave?",
+                answers: [
+                    { text: "A trading competition", correct: false },
+                    { text: "Where liquidity providers fund markets to activate them", correct: true },
+                    { text: "The initial token sale", correct: false },
+                    { text: "A marketing campaign", correct: false }
+                ]
+            },
+            {
+                question: "What happens if a launchpad market doesn't meet its funding goal?",
+                answers: [
+                    { text: "The market still launches", correct: false },
+                    { text: "Users are refunded their contributions", correct: true },
+                    { text: "Funds go to the creator", correct: false },
+                    { text: "It becomes a permanent market", correct: false }
+                ]
+            }
+        ];
+
+        // Shuffle function
+        function shuffleArray(arr) {
+            const shuffled = [...arr];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // Shuffle all answers
+        quizData.forEach(q => {
+            q.answers = shuffleArray(q.answers);
+        });
+
+        const DOM = {
+            startScreen: document.getElementById('start-screen'),
+            quizScreen: document.getElementById('quiz-screen'),
+            resultScreen: document.getElementById('result-screen'),
+            startBtn: document.getElementById('start-btn'),
+            restartBtn: document.getElementById('restart-btn'),
+            shareBtn: document.getElementById('share-btn'),
+            questionText: document.getElementById('question-text'),
+            answersGrid: document.getElementById('answers-grid'),
+            questionCounter: document.getElementById('question-counter'),
+            progressBar: document.getElementById('progress-bar'),
+            timerEl: document.getElementById('timer'),
+            finalScoreEl: document.getElementById('final-score'),
+            percentageEl: document.getElementById('percentage'),
+            scoreMessageEl: document.getElementById('score-message')
+        };
+
+        let state = {
+            currentQuestion: 0,
+            score: 0,
+            timer: null,
+            timeLeft: 25
+        };
+
+        const TIME_PER_QUESTION = 25;
+
+        DOM.startBtn.addEventListener('click', startQuiz);
+        DOM.restartBtn.addEventListener('click', restartQuiz);
+
+        function startQuiz() {
+            state.currentQuestion = 0;
+            state.score = 0;
+            transitionScreen(DOM.startScreen, DOM.quizScreen);
+            showQuestion();
+        }
+
+        function showQuestion() {
+            if (state.currentQuestion >= quizData.length) {
+                showResults();
+                return;
+            }
+
+            state.timeLeft = TIME_PER_QUESTION;
+            const q = quizData[state.currentQuestion];
+            
+            DOM.questionText.textContent = q.question;
+            DOM.questionCounter.textContent = `Q${state.currentQuestion + 1}/${quizData.length}`;
+            DOM.answersGrid.innerHTML = '';
+
+            q.answers.forEach((answer, idx) => {
+                const btn = document.createElement('button');
+                const span = document.createElement('span');
+                span.textContent = answer.text;
+                
+                btn.className = 'answer-btn';
+                btn.dataset.letter = String.fromCharCode(65 + idx);
+                btn.appendChild(span);
+                
+                if (answer.correct) btn.dataset.correct = 'true';
+                btn.addEventListener('click', selectAnswer);
+                DOM.answersGrid.appendChild(btn);
+            });
+
+            updateProgressBar();
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(state.timer);
+            updateTimerDisplay();
+            state.timer = setInterval(() => {
+                state.timeLeft--;
+                updateTimerDisplay();
+                if (state.timeLeft <= 0) {
+                    clearInterval(state.timer);
+                    disableAllAnswers();
+                    setTimeout(nextQuestion, 1500);
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            DOM.timerEl.textContent = `${state.timeLeft}s`;
+        }
+
+        function selectAnswer(e) {
+            clearInterval(state.timer);
+            const btn = e.target.closest('.answer-btn');
+            const isCorrect = btn.dataset.correct === 'true';
+            
+            if (isCorrect) {
+                state.score++;
+                btn.classList.add('correct');
+            } else {
+                btn.classList.add('incorrect');
+            }
+
+            disableAllAnswers();
+            setTimeout(nextQuestion, 1500);
+        }
+
+        function disableAllAnswers() {
+            document.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.disabled = true;
+                if (btn.dataset.correct === 'true') btn.classList.add('correct');
+            });
+        }
+
+        function nextQuestion() {
+            state.currentQuestion++;
+            showQuestion();
+        }
+
+        function updateProgressBar() {
+            const progress = (state.currentQuestion / quizData.length) * 100;
+            DOM.progressBar.style.width = `${progress}%`;
+        }
+
+        function showResults() {
+            updateProgressBar();
+            transitionScreen(DOM.quizScreen, DOM.resultScreen);
+            
+            const total = quizData.length;
+            const percentage = Math.round((state.score / total) * 100);
+            
+            DOM.finalScoreEl.textContent = `${state.score}/${total}`;
+            setTimeout(() => {
+                DOM.percentageEl.textContent = `${percentage}%`;
+            }, 200);
+
+            let message = '';
+            if (percentage >= 90) message = '🔥 Entrave Master!';
+            else if (percentage >= 75) message = '✅ Strong Knowledge!';
+            else if (percentage >= 60) message = '📚 Good Effort!';
+            else message = '🌱 Keep Learning!';
+            
+            DOM.scoreMessageEl.textContent = message;
+
+            const tweet = `I scored ${state.score}/${total} (${percentage}%) on the Entrave Protocol Quiz @TryEntrave - made by @yaaaori`;
+            DOM.shareBtn.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`;
+        }
+
+        function restartQuiz() {
+            transitionScreen(DOM.resultScreen, DOM.startScreen);
+        }
+
+        function transitionScreen(from, to) {
+            from.classList.remove('screen-visible');
+            setTimeout(() => {
+                from.style.display = 'none';
+                to.style.display = 'flex';
+                setTimeout(() => to.classList.add('screen-visible'), 10);
+            }, 300);
+        }
+
+        // Enhanced Particle System
+        const canvas = document.getElementById('particles-canvas');
+        const ctx = canvas.getContext('2d', { alpha: true });
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let particles = [];
+        const particleCount = 50;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2.5 + 0.5;
+                this.vx = (Math.random() - 0.5) * 0.4;
+                this.vy = (Math.random() - 0.5) * 0.4;
+                this.life = Math.random() * 0.5 + 0.5;
+                this.maxLife = this.life;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 0.002;
+
+                if (this.x > canvas.width) this.x = 0;
+                if (this.x < 0) this.x = canvas.width;
+                if (this.y > canvas.height) this.y = 0;
+                if (this.y < 0) this.y = canvas.height;
+
+                if (this.life <= 0) {
+                    this.life = this.maxLife;
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                }
+            }
+
+            draw() {
+                const alpha = this.life * 0.8;
+                ctx.fillStyle = `rgba(255, 119, 34, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = Array.from({ length: particleCount }, () => new Particle());
+        }
+
+        function drawConnections() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 150) {
+                        const alpha = (1 - distance / 150) * 0.3;
+                        ctx.strokeStyle = `rgba(255, 119, 34, ${alpha})`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function drawParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            drawConnections();
+        }
+
+        let animationId;
+        function animate() {
+            drawParticles();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        initParticles();
+        animate();
+    </script>
+</body>
+</html>
