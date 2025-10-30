@@ -795,7 +795,7 @@
             
             DOM.scoreMessageEl.textContent = message;
 
-            const tweet = `I scored ${state.score}/${total} (${percentage}%) on the Entrave Protocol Quiz @TryEntrave - made by @yaaaori`;
+            const tweet = `I scored ${state.score}/${total} (${percentage}%) on the Entrave Protocol Quiz @TryEntrave - made by @yaaaori, try yourself here - https://entrave-quiz.vercel.app/`;
             DOM.shareBtn.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`;
         }
 
